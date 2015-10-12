@@ -21,7 +21,6 @@ package org.apache.drill.exec.store.accumulo;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.accumulo.core.iterators.Filter;
-import org.apache.accumulo.core.iterators.IteratorUtil;
 
 public class AccumuloScanSpec {
 
@@ -29,21 +28,30 @@ public class AccumuloScanSpec {
   protected byte[] startRow;
   protected byte[] stopRow;
 
-  protected IteratorUtil iterator;
+  protected Filter filter;
+  protected String filterString;
 
   @JsonCreator
   public AccumuloScanSpec(@JsonProperty("tableName") String tableName,
                           @JsonProperty("startRow") byte[] startRow,
-                          @JsonProperty("stopRow") byte[] stopRow) {
+                          @JsonProperty("stopRow") byte[] stopRow,
+                          @JsonProperty("filterString") String filterString) {
     this.tableName = tableName;
     this.startRow = startRow;
     this.stopRow = stopRow;
+
+    // TODO: change this to a proper filter once scanning works
+    if (filterString != null) {
+      this.filter = null;
+      this.filterString = filterString;
+    }
   }
 
   public AccumuloScanSpec(String tableName, byte[] startRow, byte[] stopRow, Filter filter) {
     this.tableName = tableName;
     this.startRow = startRow;
     this.stopRow = stopRow;
+    this.filter = filter;
   }
 
   public AccumuloScanSpec(String tableName) {
@@ -67,7 +75,7 @@ public class AccumuloScanSpec {
     return "HBaseScanSpec [tableName=" + tableName
         + ", startRow=" + (startRow == null ? null : new String(startRow))
         + ", stopRow=" + (stopRow == null ? null :  new String(stopRow))
-        + ", filter=" + (iterator == null ? null : iterator.toString())
+        + ", filter=" + (filter == null ? null : filterString)
         + "]";
   }
 

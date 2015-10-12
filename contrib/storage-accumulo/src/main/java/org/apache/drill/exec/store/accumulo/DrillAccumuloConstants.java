@@ -38,4 +38,6 @@ public interface DrillAccumuloConstants {
   public static final String SYS_STORE_PROVIDER_HBASE_TABLE = "drill.exec.sys.store.provider.hbase.table";
 
   public static final String SYS_STORE_PROVIDER_HBASE_CONFIG = "drill.exec.sys.store.provider.hbase.config";
+
+  public static final String EMPTY_START_ROW = "0";
 }

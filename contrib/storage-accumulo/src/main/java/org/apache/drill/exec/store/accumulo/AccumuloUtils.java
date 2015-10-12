@@ -18,14 +18,9 @@
 package org.apache.drill.exec.store.accumulo;
 
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Bytes;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.filter.Filter;
-import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.filter.ParseFilter;
-import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
-import org.apache.hadoop.hbase.protobuf.generated.FilterProtos;
-import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.accumulo.core.iterators.Filter;
 
 import java.io.IOException;
 import java.nio.charset.CharacterCodingException;
