@@ -26,19 +26,20 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.drill.common.config.DrillConfig;
-import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.ClusterStatus;
-import org.apache.hadoop.hbase.HRegionInfo;
-import org.apache.hadoop.hbase.RegionLoad;
-import org.apache.hadoop.hbase.ServerLoad;
-import org.apache.hadoop.hbase.ServerName;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.util.Bytes;
+
+//import org.apache.hadoop.hbase.Cell;
+//import org.apache.hadoop.hbase.CellUtil;
+//import org.apache.hadoop.hbase.ClusterStatus;
+//import org.apache.hadoop.hbase.HRegionInfo;
+//import org.apache.hadoop.hbase.RegionLoad;
+//import org.apache.hadoop.hbase.ServerLoad;
+//import org.apache.hadoop.hbase.ServerName;
+//import org.apache.hadoop.hbase.client.HBaseAdmin;
+//import org.apache.hadoop.hbase.client.HTable;
+//import org.apache.hadoop.hbase.client.Result;
+//import org.apache.hadoop.hbase.client.ResultScanner;
+//import org.apache.hadoop.hbase.client.Scan;
+//import org.apache.hadoop.hbase.util.Bytes;
 
 /**
  * Computes size of each region for given table.
@@ -69,7 +70,8 @@ public class TableStatsCalculator {
    * @param config
    * @throws IOException
    */
-  public TableStatsCalculator(HTable table, HBaseScanSpec hbaseScanSpec, DrillConfig config, HBaseStoragePluginConfig storageConfig) throws IOException {
+  public TableStatsCalculator(String table, AccumuloScanSpec hbaseScanSpec, DrillConfig config, AccumuloStoragePluginConfig storageConfig) throws IOException {
+
     HBaseAdmin admin = new HBaseAdmin(table.getConfiguration());
     try {
       int rowsToSample = rowsToSample(config);
@@ -151,7 +153,7 @@ public class TableStatsCalculator {
 
   }
 
-  private boolean enabled(HBaseStoragePluginConfig config) {
+  private boolean enabled(AccumuloStoragePluginConfig config) {
     return config.isSizeCalculatorEnabled();
   }
 

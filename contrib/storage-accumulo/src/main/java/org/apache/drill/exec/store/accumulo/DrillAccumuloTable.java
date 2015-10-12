@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Set;
 
 import org.apache.drill.exec.planner.logical.DrillTable;
+
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.util.Bytes;

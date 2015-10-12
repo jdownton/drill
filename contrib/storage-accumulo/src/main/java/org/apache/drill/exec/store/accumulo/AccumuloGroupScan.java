@@ -41,24 +41,23 @@ import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.StoragePluginRegistry;
 import org.apache.drill.exec.store.accumulo.AccumuloSubScan.AccumuloSubScanSpec;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HRegionInfo;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.ServerName;
-import org.apache.hadoop.hbase.client.HTable;
 import parquet.org.codehaus.jackson.annotate.JsonCreator;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.Map.Entry;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Queue;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @JsonTypeName("accumulo-scan")
 public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.drill.exec.store.accumulo.DrillAccumuloConstants {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AccumuloGroupScan.class);
 
-  private static final Comparator<List<AccumuloSubScanSpec>> LIST_SIZE_COMPARATOR = new Comparator<List<HBaseSubScanSpec>>() {
+  private static final Comparator<List<AccumuloSubScanSpec>> LIST_SIZE_COMPARATOR = new Comparator<List<AccumuloSubScanSpec>>() {
     @Override
-    public int compare(List<HBaseSubScanSpec> list1, List<HBaseSubScanSpec> list2) {
+    public int compare(List<AccumuloSubScanSpec> list1, List<AccumuloSubScanSpec> list2) {
       return list1.size() - list2.size();
     }
   };
@@ -69,7 +68,7 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
 
   private List<SchemaPath> columns;
 
-  private AccumuloScanSpec hbaseScanSpec;
+  private AccumuloScanSpec accumuloScanSpec;
 
   private AccumuloStoragePlugin storagePlugin;
 
@@ -77,9 +76,9 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
 
   private Map<Integer, List<AccumuloSubScanSpec>> endpointFragmentMapping;
 
-  private NavigableMap<HRegionInfo, ServerName> regionsToScan;
+//  private NavigableMap<HRegionInfo, ServerName> regionsToScan;
 
-  private HTableDescriptor hTableDesc;
+//  private HTableDescriptor hTableDesc;
 
   private boolean filterPushedDown = false;
 
@@ -89,11 +88,11 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
 
   @JsonCreator
   public AccumuloGroupScan(@JsonProperty("userName") String userName,
-                           @JsonProperty("accumuloScanSpec") AccumuloScanSpec hbaseScanSpec,
+                           @JsonProperty("accumuloScanSpec") AccumuloScanSpec accumuloScanSpec,
                            @JsonProperty("storage") AccumuloStoragePluginConfig storagePluginConfig,
                            @JsonProperty("columns") List<SchemaPath> columns,
                            @JacksonInject StoragePluginRegistry pluginRegistry) throws IOException, ExecutionSetupException {
-    this (userName, (AccumuloStoragePlugin) pluginRegistry.getPlugin(storagePluginConfig), hbaseScanSpec, columns);
+    this (userName, (AccumuloStoragePlugin) pluginRegistry.getPlugin(storagePluginConfig), accumuloScanSpec, columns);
   }
 
   public AccumuloGroupScan(String userName, AccumuloStoragePlugin storagePlugin, AccumuloScanSpec scanSpec,
@@ -101,24 +100,24 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
     super(userName);
     this.storagePlugin = storagePlugin;
     this.storagePluginConfig = storagePlugin.getConfig();
-    this.hbaseScanSpec = scanSpec;
+    this.accumuloScanSpec = scanSpec;
     this.columns = columns == null || columns.size() == 0? ALL_COLUMNS : columns;
     init();
   }
 
   /**
    * Private constructor, used for cloning.
-   * @param that The HBaseGroupScan to clone
+   * @param that The AccumuloGroupScan to clone
    */
   private AccumuloGroupScan(AccumuloGroupScan that) {
     super(that);
     this.columns = that.columns;
-    this.hbaseScanSpec = that.hbaseScanSpec;
+    this.accumuloScanSpec = that.accumuloScanSpec;
     this.endpointFragmentMapping = that.endpointFragmentMapping;
-    this.regionsToScan = that.regionsToScan;
+//    this.regionsToScan = that.regionsToScan;
     this.storagePlugin = that.storagePlugin;
     this.storagePluginConfig = that.storagePluginConfig;
-    this.hTableDesc = that.hTableDesc;
+//    this.hTableDesc = that.hTableDesc;
     this.filterPushedDown = that.filterPushedDown;
     this.statsCalculator = that.statsCalculator;
     this.scanSizeInBytes = that.scanSizeInBytes;
@@ -133,45 +132,50 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
   }
 
   private void init() {
-    logger.debug("Getting region locations");
+    logger.debug("Getting tablet locations");
     try {
-      HTable table = new HTable(storagePluginConfig.getHBaseConf(), hbaseScanSpec.getTableName());
+
+      HTable table = new HTable(storagePluginConfig.getHBaseConf(), accumuloScanSpec.getTableName());
       this.hTableDesc = table.getTableDescriptor();
       NavigableMap<HRegionInfo, ServerName> regionsMap = table.getRegionLocations();
-      statsCalculator = new TableStatsCalculator(table, hbaseScanSpec, storagePlugin.getContext().getConfig(), storagePluginConfig);
+      statsCalculator = new TableStatsCalculator(table, accumuloScanSpec, storagePlugin.getContext().getConfig(), storagePluginConfig);
 
       boolean foundStartRegion = false;
+
       regionsToScan = new TreeMap<HRegionInfo, ServerName>();
+      
       for (Entry<HRegionInfo, ServerName> mapEntry : regionsMap.entrySet()) {
         HRegionInfo regionInfo = mapEntry.getKey();
-        if (!foundStartRegion && hbaseScanSpec.getStartRow() != null && hbaseScanSpec.getStartRow().length != 0 && !regionInfo.containsRow(hbaseScanSpec.getStartRow())) {
+        if (!foundStartRegion && accumuloScanSpec.getStartRow() != null && accumuloScanSpec.getStartRow().length != 0 && !regionInfo.containsRow(accumuloScanSpec.getStartRow())) {
           continue;
         }
         foundStartRegion = true;
         regionsToScan.put(regionInfo, mapEntry.getValue());
         scanSizeInBytes += statsCalculator.getRegionSizeInBytes(regionInfo.getRegionName());
-        if (hbaseScanSpec.getStopRow() != null && hbaseScanSpec.getStopRow().length != 0 && regionInfo.containsRow(hbaseScanSpec.getStopRow())) {
+        if (accumuloScanSpec.getStopRow() != null && accumuloScanSpec.getStopRow().length != 0 && regionInfo.containsRow(accumuloScanSpec.getStopRow())) {
           break;
         }
       }
 
       table.close();
     } catch (IOException e) {
-      throw new DrillRuntimeException("Error getting region info for table: " + hbaseScanSpec.getTableName(), e);
+      throw new DrillRuntimeException("Error getting region info for table: " + accumuloScanSpec.getTableName(), e);
     }
     verifyColumns();
   }
 
   private void verifyColumns() {
-    if (AbstractRecordReader.isStarQuery(columns)) {
-      return;
-    }
-    for (SchemaPath column : columns) {
-      if (!(column.equals(ROW_KEY_PATH) || hTableDesc.hasFamily(HBaseUtils.getBytes(column.getRootSegment().getPath())))) {
-        DrillRuntimeException.format("The column family '%s' does not exist in HBase table: %s .",
-            column.getRootSegment().getPath(), hTableDesc.getNameAsString());
-      }
-    }
+    // TODO: Does accumulo have a method to verify columns?  Probably not.
+//    if (AbstractRecordReader.isStarQuery(columns)) {
+//      return;
+//    }
+//    for (SchemaPath column : columns) {
+//      if (!(column.equals(ROW_KEY_PATH) || hTableDesc.hasFamily(HBaseUtils.getBytes(column.getRootSegment().getPath())))) {
+//        DrillRuntimeException.format("The column family '%s' does not exist in HBase table: %s .",
+//            column.getRootSegment().getPath(), hTableDesc.getNameAsString());
+//      }
+//    }
+    return;
   }
 
   @Override
@@ -315,7 +319,7 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
   }
 
   private HBaseSubScanSpec regionInfoToSubScanSpec(HRegionInfo ri) {
-    HBaseScanSpec spec = hbaseScanSpec;
+    HBaseScanSpec spec = accumuloScanSpec;
     return new HBaseSubScanSpec()
         .setTableName(spec.getTableName())
         .setRegionServer(regionsToScan.get(ri).getHostname())
@@ -344,7 +348,7 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
 
   @Override
   public ScanStats getScanStats() {
-    long rowCount = (long) ((scanSizeInBytes / statsCalculator.getAvgRowSizeInBytes()) * (hbaseScanSpec.getFilter() != null ? 0.5 : 1));
+    long rowCount = (long) ((scanSizeInBytes / statsCalculator.getAvgRowSizeInBytes()) * (accumuloScanSpec.getFilter() != null ? 0.5 : 1));
     // the following calculation is not precise since 'columns' could specify CFs while getColsPerRow() returns the number of qualifier.
     float diskCost = scanSizeInBytes * ((columns == null || columns.isEmpty()) ? 1 : columns.size()/statsCalculator.getColsPerRow());
     return new ScanStats(GroupScanProperty.NO_EXACT_ROW_COUNT, rowCount, 1, diskCost);
@@ -380,7 +384,7 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
   @Override
   public String toString() {
     return "HBaseGroupScan [HBaseScanSpec="
-        + hbaseScanSpec + ", columns="
+        + accumuloScanSpec + ", columns="
         + columns + "]";
   }
 
@@ -396,7 +400,7 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
 
   @JsonProperty
   public HBaseScanSpec getHBaseScanSpec() {
-    return hbaseScanSpec;
+    return accumuloScanSpec;
   }
 
   @Override
@@ -428,7 +432,7 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
    */
   @VisibleForTesting
   public void setHBaseScanSpec(HBaseScanSpec hbaseScanSpec) {
-    this.hbaseScanSpec = hbaseScanSpec;
+    this.accumuloScanSpec = hbaseScanSpec;
   }
 
   /**

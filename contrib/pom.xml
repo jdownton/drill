@@ -37,6 +37,6 @@
     <module>storage-mongo</module>
     <module>sqlline</module>
     <module>data</module>
-      <module>storage-accumulo</module>
+    <!--<module>storage-accumulo</module>-->
   </modules>
 </project>

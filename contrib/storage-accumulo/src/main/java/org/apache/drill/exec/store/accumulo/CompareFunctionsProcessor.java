@@ -38,13 +38,6 @@ import org.apache.drill.common.expression.ValueExpressions.QuotedString;
 import org.apache.drill.common.expression.ValueExpressions.TimeExpression;
 import org.apache.drill.common.expression.ValueExpressions.TimeStampExpression;
 import org.apache.drill.common.expression.visitors.AbstractExprVisitor;
-import org.apache.hadoop.hbase.util.Order;
-import org.apache.hadoop.hbase.util.PositionedByteRange;
-import org.apache.hadoop.hbase.util.SimplePositionedByteRange;
-
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.filter.Filter;
-import org.apache.hadoop.hbase.filter.PrefixFilter;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
@@ -64,7 +57,7 @@ class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, LogicalExpr
   private boolean isRowKeyPrefixComparison;
   byte[] rowKeyPrefixStartRow;
   byte[] rowKeyPrefixStopRow;
-  Filter rowKeyPrefixFilter;
+  String rowKeyPrefixFilter;
 
   public static boolean isCompareFunction(String functionName) {
     return COMPARE_FUNCTIONS_TRANSPOSE_MAP.keySet().contains(functionName);
@@ -129,7 +122,7 @@ class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, LogicalExpr
   return rowKeyPrefixStopRow;
   }
 
-  public Filter getRowKeyPrefixFilter() {
+  public String getRowKeyPrefixFilter() {
   return rowKeyPrefixFilter;
   }
 
@@ -256,6 +249,7 @@ class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, LogicalExpr
             bb = newByteBuf(9, true);
             PositionedByteRange br = new SimplePositionedByteRange(bb.array(), 0, 9);
             if (encodingType.endsWith("_OBD")) {
+
               org.apache.hadoop.hbase.util.OrderedBytes.encodeFloat64(br,
                   ((DoubleExpression)valueArg).getDouble(), Order.DESCENDING);
               this.sortOrderAscending = false;
@@ -328,8 +322,8 @@ class CompareFunctionsProcessor extends AbstractExprVisitor<Boolean, LogicalExpr
   private Boolean visitRowKeyPrefixConvertExpression(ConvertExpression e,
     int prefixLength, LogicalExpression valueArg) {
     String encodingType = e.getEncodingType();
-    rowKeyPrefixStartRow = HConstants.EMPTY_START_ROW;
-    rowKeyPrefixStopRow  = HConstants.EMPTY_START_ROW;
+    rowKeyPrefixStartRow = DrillAccumuloConstants.EMPTY_START_ROW.getBytes();
+    rowKeyPrefixStopRow  = DrillAccumuloConstants.EMPTY_START_ROW.getBytes();
     rowKeyPrefixFilter   = null;
 
     if ((encodingType.compareTo("UINT4_BE") == 0) ||
