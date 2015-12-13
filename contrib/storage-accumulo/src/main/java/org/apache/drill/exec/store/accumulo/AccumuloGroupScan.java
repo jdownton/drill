@@ -157,7 +157,6 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
   }
 
   private void verifyColumns() {
-    // TODO: Does accumulo have a method to verify columns?  Probably not so for now always return without Exception
 //    if (AbstractRecordReader.isStarQuery(columns)) {
 //      return;
 //    }
