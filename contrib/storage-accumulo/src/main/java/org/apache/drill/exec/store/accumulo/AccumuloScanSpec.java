@@ -72,7 +72,7 @@ public class AccumuloScanSpec {
 
   @Override
   public String toString() {
-    return "HBaseScanSpec [tableName=" + tableName
+    return "AccumuloScanSpec [tableName=" + tableName
         + ", startRow=" + (startRow == null ? null : new String(startRow))
         + ", stopRow=" + (stopRow == null ? null :  new String(stopRow))
         + ", filter=" + (filter == null ? null : filterString)

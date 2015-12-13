@@ -19,12 +19,12 @@ package org.apache.drill.exec.store.accumulo;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import org.apache.accumulo.core.iterators.user.RowFilter;
 import org.apache.drill.common.expression.BooleanOperator;
 import org.apache.drill.common.expression.FunctionCall;
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.expression.visitors.AbstractExprVisitor;
-import org.apache.drill.exec.store.accumulo.AccumuloScanSpec;
 
 import java.util.Arrays;
 
@@ -43,21 +43,21 @@ public class AccumuloFilterBuilder extends AbstractExprVisitor<AccumuloScanSpec,
     this.le = le;
   }
 
-  public AccumuloScanSpec parseTree() {
-    AccumuloScanSpec parsedSpec = le.accept(this, null);
-    if (parsedSpec != null) {
-      parsedSpec = mergeScanSpecs("booleanAnd", this.groupScan.getAccumuloScanSpec(), parsedSpec);
-      /*
-       * If RowFilter is THE filter attached to the scan specification,
-       * remove it since its effect is also achieved through startRow and stopRow.
-       */
-      if (parsedSpec.filter instanceof RowFilter &&
-          ((RowFilter)parsedSpec.filter).getComparator() instanceof BinaryComparator) {
-        parsedSpec.filter = null;
-      }
-    }
-    return parsedSpec;
-  }
+//  public AccumuloScanSpec parseTree() {
+//    AccumuloScanSpec parsedSpec = le.accept(this, null);
+//    if (parsedSpec != null) {
+//      parsedSpec = mergeScanSpecs("booleanAnd", this.groupScan.getAccumuloScanSpec(), parsedSpec);
+//      /*
+//       * If RowFilter is THE filter attached to the scan specification,
+//       * remove it since its effect is also achieved through startRow and stopRow.
+//       */
+//      if (parsedSpec.filter instanceof RowFilter &&
+//          ((RowFilter)parsedSpec.filter).getComparator() instanceof BinaryComparator) {
+//        parsedSpec.filter = null;
+//      }
+//    }
+//    return parsedSpec;
+//  }
 
   public boolean isAllExpressionsConverted() {
     return allExpressionsConverted;

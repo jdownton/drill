@@ -69,9 +69,10 @@ public class AccumuloRecordReader extends AbstractRecordReader implements org.ap
   private static Connector conn;
 
   public AccumuloRecordReader(Configuration conf, AccumuloSubScan.AccumuloSubScanSpec subScanSpec,
-                              List<SchemaPath> projectedColumns, FragmentContext context) throws OutOfMemoryException, TableNotFoundException {
-    accumuloConf = conf;
+                              List<SchemaPath> projectedColumns, FragmentContext context)
+          throws OutOfMemoryException, TableNotFoundException {
 
+    accumuloConf = conf;
     accScanner = conn.createScanner(AgileConf.AGILE_TABLE_RAW_DATA, new Authorizations());
     accScanner.setRange(new Range(subScanSpec.getStartRow().toString(), subScanSpec.getStopRow().toString()));
 

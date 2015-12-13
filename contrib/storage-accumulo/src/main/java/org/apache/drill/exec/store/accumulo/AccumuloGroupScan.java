@@ -27,28 +27,22 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.drill.common.exceptions.DrillRuntimeException;
+import org.apache.accumulo.core.client.admin.TableOperations;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.exec.physical.EndpointAffinity;
 import org.apache.drill.exec.physical.base.AbstractGroupScan;
 import org.apache.drill.exec.physical.base.GroupScan;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
 import org.apache.drill.exec.physical.base.ScanStats;
 import org.apache.drill.exec.physical.base.ScanStats.GroupScanProperty;
 import org.apache.drill.exec.proto.CoordinationProtos.DrillbitEndpoint;
-import org.apache.drill.exec.store.AbstractRecordReader;
 import org.apache.drill.exec.store.StoragePluginRegistry;
 import org.apache.drill.exec.store.accumulo.AccumuloSubScan.AccumuloSubScanSpec;
 import org.apache.hadoop.conf.Configuration;
 import parquet.org.codehaus.jackson.annotate.JsonCreator;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Queue;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @JsonTypeName("accumulo-scan")
@@ -75,10 +69,6 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
   private Stopwatch watch = new Stopwatch();
 
   private Map<Integer, List<AccumuloSubScanSpec>> endpointFragmentMapping;
-
-//  private NavigableMap<HRegionInfo, ServerName> regionsToScan;
-
-//  private HTableDescriptor hTableDesc;
 
   private boolean filterPushedDown = false;
 
@@ -114,10 +104,8 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
     this.columns = that.columns;
     this.accumuloScanSpec = that.accumuloScanSpec;
     this.endpointFragmentMapping = that.endpointFragmentMapping;
-//    this.regionsToScan = that.regionsToScan;
     this.storagePlugin = that.storagePlugin;
     this.storagePluginConfig = that.storagePluginConfig;
-//    this.hTableDesc = that.hTableDesc;
     this.filterPushedDown = that.filterPushedDown;
     this.statsCalculator = that.statsCalculator;
     this.scanSizeInBytes = that.scanSizeInBytes;
@@ -135,15 +123,19 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
     logger.debug("Getting tablet locations");
     try {
 
+      TableOperations tableOps = new
+
       HTable table = new HTable(storagePluginConfig.getHBaseConf(), accumuloScanSpec.getTableName());
       this.hTableDesc = table.getTableDescriptor();
+
+
       NavigableMap<HRegionInfo, ServerName> regionsMap = table.getRegionLocations();
       statsCalculator = new TableStatsCalculator(table, accumuloScanSpec, storagePlugin.getContext().getConfig(), storagePluginConfig);
 
       boolean foundStartRegion = false;
 
       regionsToScan = new TreeMap<HRegionInfo, ServerName>();
-      
+
       for (Entry<HRegionInfo, ServerName> mapEntry : regionsMap.entrySet()) {
         HRegionInfo regionInfo = mapEntry.getKey();
         if (!foundStartRegion && accumuloScanSpec.getStartRow() != null && accumuloScanSpec.getStartRow().length != 0 && !regionInfo.containsRow(accumuloScanSpec.getStartRow())) {
@@ -165,7 +157,7 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
   }
 
   private void verifyColumns() {
-    // TODO: Does accumulo have a method to verify columns?  Probably not.
+    // TODO: Does accumulo have a method to verify columns?  Probably not so for now always return without Exception
 //    if (AbstractRecordReader.isStarQuery(columns)) {
 //      return;
 //    }
@@ -178,30 +170,30 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
     return;
   }
 
-  @Override
-  public List<EndpointAffinity> getOperatorAffinity() {
-    watch.reset();
-    watch.start();
-    Map<String, DrillbitEndpoint> endpointMap = new HashMap<String, DrillbitEndpoint>();
-    for (DrillbitEndpoint ep : storagePlugin.getContext().getBits()) {
-      endpointMap.put(ep.getAddress(), ep);
-    }
-
-    Map<DrillbitEndpoint, EndpointAffinity> affinityMap = new HashMap<DrillbitEndpoint, EndpointAffinity>();
-    for (ServerName sn : regionsToScan.values()) {
-      DrillbitEndpoint ep = endpointMap.get(sn.getHostname());
-      if (ep != null) {
-        EndpointAffinity affinity = affinityMap.get(ep);
-        if (affinity == null) {
-          affinityMap.put(ep, new EndpointAffinity(ep, 1));
-        } else {
-          affinity.addAffinity(1);
-        }
-      }
-    }
-    logger.debug("Took {} µs to get operator affinity", watch.elapsed(TimeUnit.NANOSECONDS)/1000);
-    return Lists.newArrayList(affinityMap.values());
-  }
+//  @Override
+//  public List<EndpointAffinity> getOperatorAffinity() {
+//    watch.reset();
+//    watch.start();
+//    Map<String, DrillbitEndpoint> endpointMap = new HashMap<String, DrillbitEndpoint>();
+//    for (DrillbitEndpoint ep : storagePlugin.getContext().getBits()) {
+//      endpointMap.put(ep.getAddress(), ep);
+//    }
+//
+//    Map<DrillbitEndpoint, EndpointAffinity> affinityMap = new HashMap<DrillbitEndpoint, EndpointAffinity>();
+//    for (ServerName sn : regionsToScan.values()) {
+//      DrillbitEndpoint ep = endpointMap.get(sn.getHostname());
+//      if (ep != null) {
+//        EndpointAffinity affinity = affinityMap.get(ep);
+//        if (affinity == null) {
+//          affinityMap.put(ep, new EndpointAffinity(ep, 1));
+//        } else {
+//          affinity.addAffinity(1);
+//        }
+//      }
+//    }
+//    logger.debug("Took {} µs to get operator affinity", watch.elapsed(TimeUnit.NANOSECONDS)/1000);
+//    return Lists.newArrayList(affinityMap.values());
+//  }
 
   /**
    *
@@ -318,9 +310,9 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
         watch.elapsed(TimeUnit.NANOSECONDS)/1000, incomingEndpoints, endpointFragmentMapping.toString());
   }
 
-  private HBaseSubScanSpec regionInfoToSubScanSpec(HRegionInfo ri) {
-    HBaseScanSpec spec = accumuloScanSpec;
-    return new HBaseSubScanSpec()
+  private AccumuloSubScanSpec regionInfoToSubScanSpec(HRegionInfo ri) {
+    AccumuloScanSpec spec = accumuloScanSpec;
+    return new AccumuloSubScanSpec()
         .setTableName(spec.getTableName())
         .setRegionServer(regionsToScan.get(ri).getHostname())
         .setStartRow((!isNullOrEmpty(spec.getStartRow()) && ri.containsRow(spec.getStartRow())) ? spec.getStartRow() : ri.getStartKey())
@@ -362,18 +354,18 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
   }
 
   @JsonIgnore
-  public HBaseStoragePlugin getStoragePlugin() {
+  public AccumuloStoragePlugin getStoragePlugin() {
     return storagePlugin;
   }
 
   @JsonIgnore
-  public Configuration getHBaseConf() {
-    return getStorageConfig().getHBaseConf();
+  public Configuration getAccumuloConf() {
+    return getStorageConfig().getAccumuloConf();
   }
 
   @JsonIgnore
   public String getTableName() {
-    return getHBaseScanSpec().getTableName();
+    return getAccumuloScanSpec().getTableName();
   }
 
   @Override
@@ -383,13 +375,13 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
 
   @Override
   public String toString() {
-    return "HBaseGroupScan [HBaseScanSpec="
+    return "AccumuloGroupScan [AccumuloScanSpec="
         + accumuloScanSpec + ", columns="
         + columns + "]";
   }
 
   @JsonProperty("storage")
-  public HBaseStoragePluginConfig getStorageConfig() {
+  public AccumuloStoragePluginConfig getStorageConfig() {
     return this.storagePluginConfig;
   }
 
@@ -399,7 +391,7 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
   }
 
   @JsonProperty
-  public HBaseScanSpec getHBaseScanSpec() {
+  public AccumuloScanSpec getAccumuloScanSpec() {
     return accumuloScanSpec;
   }
 
@@ -431,17 +423,8 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
    * Do not use, only for testing.
    */
   @VisibleForTesting
-  public void setHBaseScanSpec(HBaseScanSpec hbaseScanSpec) {
+  public void setAccumuloScanSpec(AccumuloScanSpec hbaseScanSpec) {
     this.accumuloScanSpec = hbaseScanSpec;
-  }
-
-  /**
-   * Do not use, only for testing.
-   */
-  @JsonIgnore
-  @VisibleForTesting
-  public void setRegionsToScan(NavigableMap<HRegionInfo, ServerName> regionsToScan) {
-    this.regionsToScan = regionsToScan;
   }
 
 }

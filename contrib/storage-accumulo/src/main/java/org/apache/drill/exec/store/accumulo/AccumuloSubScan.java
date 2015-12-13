@@ -35,12 +35,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 // Class containing information for reading a single HBase region
-@JsonTypeName("hbase-region-scan")
+@JsonTypeName("accumulo-tserver-scan")
 public class AccumuloSubScan extends AbstractBase implements SubScan {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(org.apache.drill.exec.store.accumulo.AccumuloSubScan.class);
 
   @JsonProperty
   public final AccumuloStoragePluginConfig storage;
+
   @JsonIgnore
   private final AccumuloStoragePlugin accumuloStoragePlugin;
   private final List<AccumuloSubScanSpec> regionScanSpecList;

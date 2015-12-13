@@ -54,7 +54,6 @@ public abstract class AccumuloStoragePlugin extends AbstractStoragePlugin {
     return this.context;
   }
 
-  @Override
   public boolean supportsRead() {
     return true;
   }

@@ -17,6 +17,10 @@
  */
 package org.apache.drill.exec.store.accumulo;
 
+import com.phemi.agile.util.AgileConf;
+import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.proxy.thrift;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
@@ -27,6 +31,7 @@ import org.apache.drill.exec.store.SchemaFactory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
+
 
 public class AccumuloSchemaFactory implements SchemaFactory {
   static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AccumuloSchemaFactory.class);
@@ -73,6 +78,16 @@ public class AccumuloSchemaFactory implements SchemaFactory {
 
     @Override
     public Set<String> getTableNames() {
+
+      try {
+        AgileConf agileConf = (AgileConf)getConf();
+        Connector conn = agileConf.newAccumuloConnector();
+        Set<String> tableNames = conn.tableOperations().list();
+        return tableNames;
+      } catch (Exception e) {
+        logger.warn("Failure while loading table names for database '{}'.", schemaName, e.getCause());
+        return Collections.emptySet();
+      }
 
 //      try(AccumuloAdmin admin = new AccumuloAdmin(plugin.getConfig().getAccumuloConf())) {
 //        AccumuloTableDescriptor[] tables = admin.listTables();
