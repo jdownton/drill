@@ -28,6 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.accumulo.core.client.admin.TableOperations;
+import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.exec.physical.base.AbstractGroupScan;
@@ -119,15 +120,15 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
     return newScan;
   }
 
+
   private void init() {
     logger.debug("Getting tablet locations");
     try {
 
       TableOperations tableOps = new
 
-      HTable table = new HTable(storagePluginConfig.getHBaseConf(), accumuloScanSpec.getTableName());
+      HTable table = new HTable(storagePluginConfig.getAccumuloConf(), accumuloScanSpec.getTableName());
       this.hTableDesc = table.getTableDescriptor();
-
 
       NavigableMap<HRegionInfo, ServerName> regionsMap = table.getRegionLocations();
       statsCalculator = new TableStatsCalculator(table, accumuloScanSpec, storagePlugin.getContext().getConfig(), storagePluginConfig);
@@ -227,7 +228,7 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
      * Initialize these two maps
      */
     for (int i = 0; i < numSlots; ++i) {
-      endpointFragmentMapping.put(i, new ArrayList<HBaseSubScanSpec>(maxPerEndpointSlot));
+      endpointFragmentMapping.put(i, new ArrayList<AccumuloSubScanSpec>(maxPerEndpointSlot));
       String hostname = incomingEndpoints.get(i).getAddress();
       Queue<Integer> hostIndexQueue = endpointHostIndexListMap.get(hostname);
       if (hostIndexQueue == null) {
@@ -422,8 +423,8 @@ public class AccumuloGroupScan extends AbstractGroupScan implements org.apache.d
    * Do not use, only for testing.
    */
   @VisibleForTesting
-  public void setAccumuloScanSpec(AccumuloScanSpec hbaseScanSpec) {
-    this.accumuloScanSpec = hbaseScanSpec;
+  public void setAccumuloScanSpec(AccumuloScanSpec accScanSpec) {
+    this.accumuloScanSpec = accScanSpec;
   }
 
 }

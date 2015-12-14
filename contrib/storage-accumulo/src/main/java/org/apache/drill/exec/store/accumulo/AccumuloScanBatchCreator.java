@@ -39,14 +39,14 @@ public class AccumuloScanBatchCreator implements BatchCreator<AccumuloSubScan>{
     Preconditions.checkArgument(children.isEmpty());
     List<RecordReader> readers = Lists.newArrayList();
     List<SchemaPath> columns = null;
-    for(AccumuloSubScan.AccumuloSubScanSpec scanSpec : subScan.getRegionScanSpecList()){
+    for(AccumuloSubScan.AccumuloSubScanSpec scanSpec : subScan.getRegionScanSpecList()) {
       try {
-        if ((columns = subScan.getColumns())==null) {
+        if ((columns = subScan.getColumns()) == null) {
           columns = GroupScan.ALL_COLUMNS;
         }
         readers.add(new AccumuloRecordReader(subScan.getStorageConfig().getAccumuloConf(), scanSpec, columns, context));
       } catch (Exception e1) {
-        throw new ExecutionSetupException(e1);
+        throw new ExecutionSetupException(e1.getMessage());
       }
     }
     return new ScanBatch(subScan, context, readers.iterator());

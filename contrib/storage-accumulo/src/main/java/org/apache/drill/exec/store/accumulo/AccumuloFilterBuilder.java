@@ -25,7 +25,7 @@ import org.apache.drill.common.expression.FunctionCall;
 import org.apache.drill.common.expression.LogicalExpression;
 import org.apache.drill.common.expression.SchemaPath;
 import org.apache.drill.common.expression.visitors.AbstractExprVisitor;
-import org.apache.drill.exec.store.accumulo.AccumuloScanSpec;
+import org.apache.accumulo.core.iterators.Filter;
 
 import java.util.Arrays;
 
@@ -125,8 +125,8 @@ public class AccumuloFilterBuilder extends AbstractExprVisitor<AccumuloScanSpec,
 
   private AccumuloScanSpec mergeScanSpecs(String functionName, AccumuloScanSpec leftScanSpec, AccumuloScanSpec rightScanSpec) {
     Filter newFilter = null;
-    byte[] startRow = HConstants.EMPTY_START_ROW;
-    byte[] stopRow = HConstants.EMPTY_END_ROW;
+    byte[] startRow = DrillAccumuloConstants.EMPTY_START_ROW.getBytes();
+    byte[] stopRow = DrillAccumuloConstants.EMPTY_END_ROW.getBytes();
 
     switch (functionName) {
     case "booleanAnd":
@@ -167,8 +167,8 @@ public class AccumuloFilterBuilder extends AbstractExprVisitor<AccumuloScanSpec,
     CompareOp compareOp = null;
     boolean isNullTest = false;
     ByteArrayComparable comparator = new BinaryComparator(fieldValue);
-    byte[] startRow = AccConstants.EMPTY_START_ROW;
-    byte[] stopRow = AccConstants.EMPTY_END_ROW;
+    byte[] startRow = DrillAccumuloConstants.EMPTY_START_ROW.getBytes();
+    byte[] stopRow = DrillAccumuloConstants.EMPTY_END_ROW.getBytes();
     switch (functionName) {
     case "equal":
       compareOp = CompareOp.EQUAL;
@@ -302,7 +302,7 @@ public class AccumuloFilterBuilder extends AbstractExprVisitor<AccumuloScanSpec,
       break;
     }
 
-    if (compareOp != null || startRow != HConstants.EMPTY_START_ROW || stopRow != HConstants.EMPTY_END_ROW) {
+    if (compareOp != null || startRow != DrillAccumuloConstants.EMPTY_START_ROW || stopRow != DrillAccumuloConstants.EMPTY_END_ROW) {
       Filter filter = null;
       if (isRowKey) {
         if (compareOp != null) {
@@ -329,8 +329,8 @@ private AccumuloScanSpec createRowKeyPrefixScanSpec(FunctionCall call,
     byte[] stopRow  = processor.getRowKeyPrefixStopRow();
     Filter filter   = processor.getRowKeyPrefixFilter();
 
-    if (startRow != AccConstants.EMPTY_START_ROW ||
-      stopRow != AccConstants.EMPTY_END_ROW ||
+    if (startRow != DrillAccumuloConstants.EMPTY_START_ROW ||
+      stopRow != DrillAccumuloConstants.EMPTY_END_ROW ||
       filter != null) {
       return new AccumuloScanSpec(groupScan.getTableName(), startRow, stopRow, filter);
     }

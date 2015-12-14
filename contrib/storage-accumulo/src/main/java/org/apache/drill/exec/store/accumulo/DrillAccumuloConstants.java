@@ -27,7 +27,7 @@ public interface DrillAccumuloConstants {
 
   public static final SchemaPath ROW_KEY_PATH = SchemaPath.getSimplePath(ROW_KEY);
 
-  public static final String HBASE_ZOOKEEPER_PORT = "hbase.zookeeper.property.clientPort";
+  public static final String ACCUMULO_ZOOKEEPER_PORT = "hbase.zookeeper.property.clientPort";
 
   public static final MajorType ROW_KEY_TYPE = Types.required(MinorType.VARBINARY);
 
@@ -35,9 +35,11 @@ public interface DrillAccumuloConstants {
 
   public static final MajorType COLUMN_TYPE = Types.optional(MinorType.VARBINARY);
 
-  public static final String SYS_STORE_PROVIDER_HBASE_TABLE = "drill.exec.sys.store.provider.hbase.table";
+  public static final String SYS_STORE_PROVIDER_ACCUMULO_TABLE = "drill.exec.sys.store.provider.accumulo.table";
 
-  public static final String SYS_STORE_PROVIDER_HBASE_CONFIG = "drill.exec.sys.store.provider.hbase.config";
+  public static final String SYS_STORE_PROVIDER_ACCUMULO_CONFIG = "drill.exec.sys.store.provider.accumulo.config";
 
   public static final String EMPTY_START_ROW = "0";
+
+  public static final String EMPTY_END_ROW = "";
 }

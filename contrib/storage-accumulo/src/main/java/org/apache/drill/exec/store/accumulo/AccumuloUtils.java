@@ -19,6 +19,7 @@ package org.apache.drill.exec.store.accumulo;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
+import org.apache.accumulo.core.protobuf.ProtobufUtil;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.accumulo.core.iterators.Filter;
 

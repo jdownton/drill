@@ -109,8 +109,8 @@ public class AccumuloStoragePluginConfig extends StoragePluginConfigBase impleme
   @JsonIgnore
   @VisibleForTesting
   public void setZookeeperPort(int zookeeperPort) {
-    this.config.put(HBASE_ZOOKEEPER_PORT, String.valueOf(zookeeperPort));
-    getAccumuloConf().setInt(HBASE_ZOOKEEPER_PORT, zookeeperPort);
+    this.config.put(ACCUMULO_ZOOKEEPER_PORT, String.valueOf(zookeeperPort));
+    getAccumuloConf().setInt(ACCUMULO_ZOOKEEPER_PORT, zookeeperPort);
   }
 
 }

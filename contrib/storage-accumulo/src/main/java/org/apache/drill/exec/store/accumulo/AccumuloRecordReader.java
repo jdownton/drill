@@ -57,8 +57,8 @@ public class AccumuloRecordReader extends AbstractRecordReader implements org.ap
   private Map<String, MapVector> familyVectorMap;
   private VarBinaryVector rowKeyVector;
 
-  private HTable hTable;
-  private ResultScanner resultScanner;
+  private DrillAccumuloTable hTable;
+  private Scanner resultScanner;
 
   private Scanner accScanner;
   private Configuration accumuloConf;

@@ -82,7 +82,6 @@ public class AccumuloSubScan extends AbstractBase implements SubScan {
     return columns;
   }
 
-  @Override
   public boolean isExecutable() {
     return false;
   }

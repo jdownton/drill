@@ -19,7 +19,6 @@ package org.apache.drill.exec.store.accumulo;
 
 import com.phemi.agile.util.AgileConf;
 import org.apache.accumulo.core.client.Connector;
-import org.apache.accumulo.proxy.thrift;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.schema.SchemaPlus;
@@ -80,7 +79,7 @@ public class AccumuloSchemaFactory implements SchemaFactory {
     public Set<String> getTableNames() {
 
       try {
-        AgileConf agileConf = (AgileConf)getConf();
+        AgileConf agileConf = new AgileConf();
         Connector conn = agileConf.newAccumuloConnector();
         Set<String> tableNames = conn.tableOperations().list();
         return tableNames;
@@ -100,10 +99,9 @@ public class AccumuloSchemaFactory implements SchemaFactory {
 //        logger.warn("Failure while loading table names for database '{}'.", schemaName, e.getCause());
 //        return Collections.emptySet();
 //      }
-
-      // eventually we'll return a list of tables
-      return Collections.emptySet();
-
+//
+//      // eventually we'll return a list of tables
+//      return Collections.emptySet();
     }
 
     @Override
