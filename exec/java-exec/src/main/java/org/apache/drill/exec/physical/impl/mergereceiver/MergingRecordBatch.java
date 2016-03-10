@@ -1,5 +1,3 @@
-package org.apache.drill.exec.physical.impl.mergereceiver;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,8 +15,7 @@ package org.apache.drill.exec.physical.impl.mergereceiver;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import io.netty.buffer.ByteBuf;
+package org.apache.drill.exec.physical.impl.mergereceiver;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -26,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import org.apache.calcite.rel.RelFieldCollation.Direction;
 import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.expression.ErrorCollector;
 import org.apache.drill.common.expression.ErrorCollectorImpl;
@@ -76,12 +74,14 @@ import org.apache.drill.exec.vector.AllocationHelper;
 import org.apache.drill.exec.vector.CopyUtil;
 import org.apache.drill.exec.vector.FixedWidthVector;
 import org.apache.drill.exec.vector.ValueVector;
-import org.apache.calcite.rel.RelFieldCollation.Direction;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.sun.codemodel.JConditional;
 import com.sun.codemodel.JExpr;
+
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * The MergingRecordBatch merges pre-sorted record batches from remote senders.
@@ -126,8 +126,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   public MergingRecordBatch(final FragmentContext context,
                             final MergingReceiverPOP config,
                             final RawFragmentBatchProvider[] fragProviders) throws OutOfMemoryException {
-    super(config, context, true, context.newOperatorContext(config, false));
-    //super(config, context);
+    super(config, context, true, context.newOperatorContext(config));
     this.fragProviders = fragProviders;
     this.context = context;
     this.outgoingContainer = new VectorContainer(oContext);
@@ -313,6 +312,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
 
       // allocate the priority queue with the generated comparator
       this.pqueue = new PriorityQueue<>(fragProviders.length, new Comparator<Node>() {
+        @Override
         public int compare(final Node node1, final Node node2) {
           final int leftIndex = (node1.batchId << 16) + node1.valueIndex;
           final int rightIndex = (node2.batchId << 16) + node2.valueIndex;
@@ -509,9 +509,10 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
       informSenders();
     } else {
       close();
-      for (final RawFragmentBatchProvider provider : fragProviders) {
-        provider.kill(context);
-      }
+    }
+
+    for (final RawFragmentBatchProvider provider : fragProviders) {
+      provider.kill(context);
     }
   }
 
@@ -663,7 +664,7 @@ public class MergingRecordBatch extends AbstractRecordBatch<MergingReceiverPOP> 
   GeneratorMapping COPIER_MAPPING = new GeneratorMapping("doSetup", "doCopy", null, null);
   public final MappingSet COPIER_MAPPING_SET = new MappingSet(COPIER_MAPPING, COPIER_MAPPING);
 
-  private void generateComparisons(final ClassGenerator g, final VectorAccessible batch) throws SchemaChangeException {
+  private void generateComparisons(final ClassGenerator<?> g, final VectorAccessible batch) throws SchemaChangeException {
     g.setMappingSet(MAIN_MAPPING);
 
     for (final Ordering od : popConfig.getOrderings()) {

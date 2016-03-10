@@ -17,6 +17,7 @@
  */
 
 import org.apache.drill.common.types.TypeProtos.MinorType;
+import org.apache.drill.exec.vector.ValueVector;
 
 <@pp.dropOutputFile />
 <@pp.changeOutputFile name="/org/apache/drill/exec/vector/complex/UnionVector.java" />
@@ -30,7 +31,6 @@ package org.apache.drill.exec.vector.complex;
 import java.util.Iterator;
 import org.apache.drill.exec.vector.complex.impl.ComplexCopier;
 import org.apache.drill.exec.util.CallBack;
-import org.apache.drill.common.expression.PathSegment;
 import org.apache.drill.exec.expr.BasicTypeHelper;
 
 /*
@@ -80,6 +80,10 @@ public class UnionVector implements ValueVector {
     this.callBack = callBack;
   }
 
+  public BufferAllocator getAllocator() {
+    return allocator;
+  }
+
   public List<MinorType> getSubTypes() {
     return majorType.getSubTypeList();
   }
@@ -89,7 +93,7 @@ public class UnionVector implements ValueVector {
       return;
     }
     majorType =  MajorType.newBuilder(this.majorType).addSubType(type).build();
-    field = MaterializedField.create(field.getPath(), majorType);
+    field = MaterializedField.create(field.getName(), majorType);
     if (callBack != null) {
       callBack.doWork();
     }
@@ -198,13 +202,13 @@ public class UnionVector implements ValueVector {
   }
 
   @Override
-  public TransferPair getTransferPair() {
-    return new TransferImpl(field);
+  public TransferPair getTransferPair(BufferAllocator allocator) {
+    return new TransferImpl(field, allocator);
   }
 
   @Override
-  public TransferPair getTransferPair(FieldReference ref) {
-    return new TransferImpl(field.withPath(ref));
+  public TransferPair getTransferPair(String ref, BufferAllocator allocator) {
+    return new TransferImpl(field.withPath(ref), allocator);
   }
 
   @Override
@@ -228,21 +232,22 @@ public class UnionVector implements ValueVector {
     copyFrom(inIndex, outIndex, from);
   }
 
-  public void addVector(ValueVector v) {
+  public ValueVector addVector(ValueVector v) {
     String name = v.getField().getType().getMinorType().name().toLowerCase();
     MajorType type = v.getField().getType();
     Preconditions.checkState(internalMap.getChild(name) == null, String.format("%s vector already exists", name));
-    ValueVector newVector = internalMap.addOrGet(name, type, (Class<ValueVector>) BasicTypeHelper.getValueVectorClass(type.getMinorType(), type.getMode()));
+    final ValueVector newVector = internalMap.addOrGet(name, type, BasicTypeHelper.getValueVectorClass(type.getMinorType(), type.getMode()));
     v.makeTransferPair(newVector).transfer();
     internalMap.putChild(name, newVector);
     addSubType(v.getField().getType().getMinorType());
+    return newVector;
   }
 
   private class TransferImpl implements TransferPair {
 
     UnionVector to;
 
-    public TransferImpl(MaterializedField field) {
+    public TransferImpl(MaterializedField field, BufferAllocator allocator) {
       to = new UnionVector(field, allocator, null);
     }
 
@@ -343,24 +348,6 @@ public class UnionVector implements ValueVector {
     List<ValueVector> vectors = Lists.newArrayList(internalMap.iterator());
     vectors.add(typeVector);
     return vectors.iterator();
-  }
-
-  public TypedFieldId getFieldIdIfMatches(TypedFieldId.Builder builder, boolean addToBreadCrumb, PathSegment seg) {
-    if (seg.isNamed()) {
-      ValueVector v = getMap();
-      if (v != null) {
-        return ((AbstractContainerVector) v).getFieldIdIfMatches(builder, addToBreadCrumb, seg);
-      } else {
-        return null;
-      }
-    } else if (seg.isArray()) {
-      ValueVector v = getList();
-      if (v != null) {
-        return ((ListVector) v).getFieldIdIfMatches(builder, addToBreadCrumb, seg);
-      }
-      else return null;
-    }
-    return null;
   }
 
   public class Accessor extends BaseValueVector.BaseAccessor {

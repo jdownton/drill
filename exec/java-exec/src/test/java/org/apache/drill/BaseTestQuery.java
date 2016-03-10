@@ -18,11 +18,9 @@
 package org.apache.drill;
 
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -250,7 +248,7 @@ public class BaseTestQuery extends ExecTest {
   }
 
   @AfterClass
-  public static void closeClient() throws IOException {
+  public static void closeClient() throws Exception {
     if (client != null) {
       client.close();
     }

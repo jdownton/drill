@@ -18,6 +18,7 @@
 package org.apache.drill.exec;
 
 import org.apache.drill.exec.physical.impl.common.HashTable;
+import org.apache.drill.exec.rpc.user.InboundImpersonationManager;
 import org.apache.drill.exec.server.options.OptionValidator;
 import org.apache.drill.exec.server.options.TypeValidators.AdminOptionValidator;
 import org.apache.drill.exec.server.options.TypeValidators.BooleanValidator;
@@ -75,6 +76,7 @@ public interface ExecConstants {
   String HTTP_ENABLE = "drill.exec.http.enabled";
   String HTTP_PORT = "drill.exec.http.port";
   String HTTP_ENABLE_SSL = "drill.exec.http.ssl_enabled";
+  String HTTP_SESSION_MAX_IDLE_SECS = "drill.exec.http.session_max_idle_secs";
   String HTTP_KEYSTORE_PATH = "javax.net.ssl.keyStore";
   String HTTP_KEYSTORE_PASSWORD = "javax.net.ssl.keyStorePassword";
   String HTTP_TRUSTSTORE_PATH = "javax.net.ssl.trustStore";
@@ -153,6 +155,8 @@ public interface ExecConstants {
   OptionValidator MONGO_READER_ALL_TEXT_MODE_VALIDATOR = new BooleanValidator(MONGO_ALL_TEXT_MODE, false);
   String MONGO_READER_READ_NUMBERS_AS_DOUBLE = "store.mongo.read_numbers_as_double";
   OptionValidator MONGO_READER_READ_NUMBERS_AS_DOUBLE_VALIDATOR = new BooleanValidator(MONGO_READER_READ_NUMBERS_AS_DOUBLE, false);
+  String MONGO_BSON_RECORD_READER = "store.mongo.bson.record.reader";
+  OptionValidator MONGO_BSON_RECORD_READER_VALIDATOR = new BooleanValidator(MONGO_BSON_RECORD_READER, true);
 
   BooleanValidator ENABLE_UNION_TYPE = new BooleanValidator("exec.enable_union_type", false);
 
@@ -164,7 +168,8 @@ public interface ExecConstants {
 
   String SLICE_TARGET = "planner.slice_target";
   long SLICE_TARGET_DEFAULT = 100000l;
-  OptionValidator SLICE_TARGET_OPTION = new PositiveLongValidator(SLICE_TARGET, Long.MAX_VALUE, SLICE_TARGET_DEFAULT);
+  PositiveLongValidator SLICE_TARGET_OPTION = new PositiveLongValidator(SLICE_TARGET, Long.MAX_VALUE,
+      SLICE_TARGET_DEFAULT);
 
   String CAST_TO_NULLABLE_NUMERIC = "drill.exec.functions.cast_empty_string_to_null";
   OptionValidator CAST_TO_NULLABLE_NUMERIC_OPTION = new BooleanValidator(CAST_TO_NULLABLE_NUMERIC, false);
@@ -278,4 +283,21 @@ public interface ExecConstants {
    */
   String ADMIN_USER_GROUPS_KEY = "security.admin.user_groups";
   StringValidator ADMIN_USER_GROUPS_VALIDATOR = new AdminOptionValidator(ADMIN_USER_GROUPS_KEY, "");
+
+  /**
+   * Option whose value is a string representing list of inbound impersonation policies.
+   *
+   * Impersonation policy format:
+   * [
+   *   {
+   *    proxy_principals : { users : [“...”], groups : [“...”] },
+   *    target_principals : { users : [“...”], groups : [“...”] }
+   *   },
+   *   ...
+   * ]
+   */
+  String IMPERSONATION_POLICIES_KEY = "exec.impersonation.inbound_policies";
+  StringValidator IMPERSONATION_POLICY_VALIDATOR =
+      new InboundImpersonationManager.InboundImpersonationPolicyValidator(IMPERSONATION_POLICIES_KEY, "[]");
+
 }

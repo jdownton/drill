@@ -273,7 +273,7 @@ public class StreamingAggBatch extends AbstractRecordBatch<StreamingAggregate> {
         continue;
       }
       keyExprs[i] = expr;
-      final MaterializedField outputField = MaterializedField.create(ne.getRef(), expr.getMajorType());
+      final MaterializedField outputField = MaterializedField.create(ne.getRef().getAsUnescapedPath(), expr.getMajorType());
       final ValueVector vector = TypeHelper.getNewVector(outputField, oContext.getAllocator());
       keyOutputIds[i] = container.add(vector);
     }
@@ -288,7 +288,7 @@ public class StreamingAggBatch extends AbstractRecordBatch<StreamingAggregate> {
         continue;
       }
 
-      final MaterializedField outputField = MaterializedField.create(ne.getRef(), expr.getMajorType());
+      final MaterializedField outputField = MaterializedField.create(ne.getRef().getAsUnescapedPath(), expr.getMajorType());
       ValueVector vector = TypeHelper.getNewVector(outputField, oContext.getAllocator());
       TypedFieldId id = container.add(vector);
       valueExprs[i] = new ValueVectorWriteExpression(id, expr, true);
@@ -309,7 +309,7 @@ public class StreamingAggBatch extends AbstractRecordBatch<StreamingAggregate> {
 
     container.buildSchema(SelectionVectorMode.NONE);
     StreamingAggregator agg = context.getImplementationClass(cg);
-    agg.setup(context, incoming, this);
+    agg.setup(oContext, incoming, this);
     return agg;
   }
 

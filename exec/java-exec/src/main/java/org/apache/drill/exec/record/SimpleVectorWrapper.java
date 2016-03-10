@@ -17,24 +17,12 @@
  */
 package org.apache.drill.exec.record;
 
-import com.google.common.collect.Lists;
-import org.apache.drill.common.expression.PathSegment;
 import org.apache.drill.common.expression.SchemaPath;
-import org.apache.drill.common.types.TypeProtos;
-import org.apache.drill.common.types.TypeProtos.DataMode;
-import org.apache.drill.common.types.TypeProtos.MajorType;
-import org.apache.drill.common.types.TypeProtos.MajorTypeOrBuilder;
-import org.apache.drill.common.types.TypeProtos.MinorType;
-import org.apache.drill.common.types.Types;
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.vector.ValueVector;
-import org.apache.drill.exec.vector.complex.AbstractContainerVector;
 import org.apache.drill.exec.vector.complex.AbstractMapVector;
 import org.apache.drill.exec.vector.complex.FieldIdUtil;
-import org.apache.drill.exec.vector.complex.ListVector;
-import org.apache.drill.exec.vector.complex.MapVector;
-import org.apache.drill.exec.vector.complex.UnionVector;
 
-import java.util.List;
 import com.google.common.base.Preconditions;
 
 public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper<T>{
@@ -74,8 +62,8 @@ public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper
 
   @SuppressWarnings("unchecked")
   @Override
-  public VectorWrapper<T> cloneAndTransfer() {
-    TransferPair tp = vector.getTransferPair();
+  public VectorWrapper<T> cloneAndTransfer(BufferAllocator allocator) {
+    TransferPair tp = vector.getTransferPair(allocator);
     tp.transfer();
     return new SimpleVectorWrapper<T>((T) tp.getTo());
   }
@@ -113,10 +101,11 @@ public class SimpleVectorWrapper<T extends ValueVector> implements VectorWrapper
     return FieldIdUtil.getFieldId(getValueVector(), id, expectedPath, false);
   }
 
+  @Override
   public void transfer(VectorWrapper<?> destination) {
     Preconditions.checkArgument(destination instanceof SimpleVectorWrapper);
     Preconditions.checkArgument(getField().getType().equals(destination.getField().getType()));
-    vector.makeTransferPair(((SimpleVectorWrapper)destination).vector).transfer();
+    vector.makeTransferPair(((SimpleVectorWrapper<?>)destination).vector).transfer();
   }
 
 }

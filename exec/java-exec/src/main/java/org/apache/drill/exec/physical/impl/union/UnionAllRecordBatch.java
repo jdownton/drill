@@ -37,7 +37,6 @@ import org.apache.drill.exec.expr.CodeGenerator;
 import org.apache.drill.exec.expr.ExpressionTreeMaterializer;
 import org.apache.drill.exec.expr.ValueVectorReadExpression;
 import org.apache.drill.exec.expr.ValueVectorWriteExpression;
-import org.apache.drill.exec.exception.OutOfMemoryException;
 import org.apache.drill.exec.ops.FragmentContext;
 import org.apache.drill.exec.physical.config.UnionAll;
 import org.apache.drill.exec.record.AbstractRecordBatch;
@@ -168,9 +167,9 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
     for(VectorWrapper<?> vw : current) {
       ValueVector vvIn = vw.getValueVector();
       // get the original input column names
-      SchemaPath inputPath = vvIn.getField().getPath();
+      SchemaPath inputPath = SchemaPath.getSimplePath(vvIn.getField().getPath());
       // get the renamed column names
-      SchemaPath outputPath = outputFields.get(index).getPath();
+      SchemaPath outputPath = SchemaPath.getSimplePath(outputFields.get(index).getPath());
 
       final ErrorCollector collector = new ErrorCollectorImpl();
       // According to input data names, Minortypes, Datamodes, choose to
@@ -186,7 +185,7 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
           }
 
           ValueVectorReadExpression vectorRead = (ValueVectorReadExpression) expr;
-          ValueVector vvOut = container.addOrGet(MaterializedField.create(outputPath, vectorRead.getMajorType()));
+          ValueVector vvOut = container.addOrGet(MaterializedField.create(outputPath.getAsUnescapedPath(), vectorRead.getMajorType()));
           TransferPair tp = vvIn.makeTransferPair(vvOut);
           transfers.add(tp);
         // Copy data in order to rename the column
@@ -196,10 +195,10 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
             throw new SchemaChangeException(String.format("Failure while trying to materialize incoming schema.  Errors:\n %s.", collector.toErrorString()));
           }
 
-          MaterializedField outputField = MaterializedField.create(outputPath, expr.getMajorType());
+          MaterializedField outputField = MaterializedField.create(outputPath.getAsUnescapedPath(), expr.getMajorType());
           ValueVector vv = container.addOrGet(outputField, callBack);
           allocationVectors.add(vv);
-          TypedFieldId fid = container.getValueVectorId(outputField.getPath());
+          TypedFieldId fid = container.getValueVectorId(SchemaPath.getSimplePath(outputField.getPath()));
           ValueVectorWriteExpression write = new ValueVectorWriteExpression(fid, expr, true);
           cg.addExpr(write);
         }
@@ -229,10 +228,10 @@ public class UnionAllRecordBatch extends AbstractRecordBatch<UnionAll> {
           }
         }
 
-        final MaterializedField outputField = MaterializedField.create(outputPath, expr.getMajorType());
+        final MaterializedField outputField = MaterializedField.create(outputPath.getAsUnescapedPath(), expr.getMajorType());
         ValueVector vector = container.addOrGet(outputField, callBack);
         allocationVectors.add(vector);
-        TypedFieldId fid = container.getValueVectorId(outputField.getPath());
+        TypedFieldId fid = container.getValueVectorId(SchemaPath.getSimplePath(outputField.getPath()));
 
         boolean useSetSafe = !(vector instanceof FixedWidthVector);
         ValueVectorWriteExpression write = new ValueVectorWriteExpression(fid, expr, useSetSafe);

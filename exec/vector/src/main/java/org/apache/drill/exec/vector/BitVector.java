@@ -20,7 +20,6 @@ package org.apache.drill.exec.vector;
 import com.google.common.base.Preconditions;
 import io.netty.buffer.DrillBuf;
 
-import org.apache.drill.common.expression.FieldReference;
 import org.apache.drill.exec.exception.OversizedAllocationException;
 import org.apache.drill.exec.expr.holders.BitHolder;
 import org.apache.drill.exec.expr.holders.NullableBitHolder;
@@ -185,7 +184,7 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
 
   @Override
   public void load(SerializedField metadata, DrillBuf buffer) {
-    Preconditions.checkArgument(this.field.matches(metadata), "The field %s doesn't match the provided metadata %s.", this.field, metadata);
+    Preconditions.checkArgument(this.field.getPath().equals(metadata.getNamePart().getName()), "The field %s doesn't match the provided metadata %s.", this.field, metadata);
     final int valueCount = metadata.getValueCount();
     final int expectedLength = getSizeFromCount(valueCount);
     final int actualLength = metadata.getBufferLength();
@@ -208,13 +207,13 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
   }
 
   @Override
-  public TransferPair getTransferPair() {
-    return new TransferImpl(getField());
+  public TransferPair getTransferPair(BufferAllocator allocator) {
+    return new TransferImpl(getField(), allocator);
   }
 
   @Override
-  public TransferPair getTransferPair(FieldReference ref) {
-    return new TransferImpl(getField().withPath(ref));
+  public TransferPair getTransferPair(String ref, BufferAllocator allocator) {
+    return new TransferImpl(getField().withPath(ref), allocator);
   }
 
   @Override
@@ -273,7 +272,7 @@ public final class BitVector extends BaseDataValueVector implements FixedWidthVe
   private class TransferImpl implements TransferPair {
     BitVector to;
 
-    public TransferImpl(MaterializedField field) {
+    public TransferImpl(MaterializedField field, BufferAllocator allocator) {
       this.to = new BitVector(field, allocator);
     }
 

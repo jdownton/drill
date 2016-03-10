@@ -20,11 +20,8 @@ package org.apache.drill.exec.util;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.hadoop.io.Text;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 
 /*
  * Simple class that extends the regular java.util.HashMap but overrides the
@@ -36,9 +33,6 @@ public class JsonStringHashMap<K, V> extends LinkedHashMap<K, V> {
 
   static {
     mapper = new ObjectMapper();
-    SimpleModule serializer = new SimpleModule("TextSerializer")
-        .addSerializer(Text.class, new TextSerializer());
-    mapper.registerModule(serializer);
   }
 
   @Override
@@ -52,7 +46,7 @@ public class JsonStringHashMap<K, V> extends LinkedHashMap<K, V> {
     if (!(obj instanceof Map)) {
       return false;
     }
-    Map other = (Map) obj;
+    Map<?,?> other = (Map<?,?>) obj;
     if (this.size() != other.size()) {
       return false;
     }

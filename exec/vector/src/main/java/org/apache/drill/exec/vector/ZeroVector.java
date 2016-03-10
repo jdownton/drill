@@ -21,7 +21,6 @@ import java.util.Iterator;
 
 import com.google.common.collect.Iterators;
 import io.netty.buffer.DrillBuf;
-import org.apache.drill.common.expression.FieldReference;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.exception.OutOfMemoryException;
@@ -94,7 +93,7 @@ public class ZeroVector implements ValueVector {
   }
 
   @Override
-  public TransferPair getTransferPair() {
+  public TransferPair getTransferPair(BufferAllocator allocator) {
     return defaultPair;
   }
 
@@ -108,7 +107,7 @@ public class ZeroVector implements ValueVector {
   }
 
   @Override
-  public Iterator iterator() {
+  public Iterator<ValueVector> iterator() {
     return Iterators.emptyIterator();
   }
 
@@ -138,6 +137,11 @@ public class ZeroVector implements ValueVector {
   }
 
   @Override
+  public BufferAllocator getAllocator() {
+    throw new UnsupportedOperationException("Tried to get allocator from ZeroVector");
+  }
+
+  @Override
   public void setInitialCapacity(int numRecords) { }
 
   @Override
@@ -146,7 +150,7 @@ public class ZeroVector implements ValueVector {
   }
 
   @Override
-  public TransferPair getTransferPair(FieldReference ref) {
+  public TransferPair getTransferPair(String ref, BufferAllocator allocator) {
     return defaultPair;
   }
 

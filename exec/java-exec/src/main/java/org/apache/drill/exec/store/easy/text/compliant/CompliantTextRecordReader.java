@@ -28,7 +28,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import org.apache.drill.common.exceptions.DrillRuntimeException;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.common.expression.SchemaPath;
@@ -88,6 +87,11 @@ public class CompliantTextRecordReader extends AbstractRecordReader {
       }).isPresent();
     }
     return super.isStarQuery();
+  }
+
+  @Override
+  protected List<SchemaPath> getDefaultColumnsToRead() {
+    return DEFAULT_TEXT_COLS_TO_READ;
   }
 
   /**
@@ -224,11 +228,11 @@ public class CompliantTextRecordReader extends AbstractRecordReader {
    * This class provides OutputMutator for header extraction.
    */
   private class HeaderOutputMutator implements OutputMutator {
-    private final Map<MaterializedField.Key, ValueVector> fieldVectorMap = Maps.newHashMap();
+    private final Map<String, ValueVector> fieldVectorMap = Maps.newHashMap();
 
     @Override
     public <T extends ValueVector> T addField(MaterializedField field, Class<T> clazz) throws SchemaChangeException {
-      ValueVector v = fieldVectorMap.get(field.key());
+      ValueVector v = fieldVectorMap.get(field);
       if (v == null || v.getClass() != clazz) {
         // Field does not exist add it to the map
         v = TypeHelper.getNewVector(field, oContext.getAllocator());
@@ -236,7 +240,7 @@ public class CompliantTextRecordReader extends AbstractRecordReader {
           throw new SchemaChangeException(String.format(
               "Class %s was provided, expected %s.", clazz.getSimpleName(), v.getClass().getSimpleName()));
         }
-        fieldVectorMap.put(field.key(), v);
+        fieldVectorMap.put(field.getPath(), v);
       }
       return clazz.cast(v);
     }

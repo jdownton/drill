@@ -33,7 +33,6 @@ import org.apache.drill.exec.vector.*;
 import org.apache.drill.common.exceptions.*;
 import org.apache.drill.exec.exception.*;
 import org.apache.drill.exec.expr.holders.*;
-import org.apache.drill.common.expression.FieldReference;
 import org.apache.drill.common.types.TypeProtos.*;
 import org.apache.drill.common.types.Types;
 import org.apache.drill.common.util.DrillStringUtils;
@@ -65,7 +64,7 @@ import java.math.BigInteger;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 
-import org.apache.hadoop.io.Text;
+import org.apache.drill.exec.util.Text;
 
 
 

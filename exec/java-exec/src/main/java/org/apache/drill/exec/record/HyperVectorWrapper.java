@@ -17,15 +17,12 @@
  */
 package org.apache.drill.exec.record;
 
-import java.util.AbstractMap;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.drill.common.expression.SchemaPath;
+import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.vector.ValueVector;
-import org.apache.drill.exec.vector.complex.AbstractContainerVector;
 import org.apache.drill.exec.vector.complex.AbstractMapVector;
 import org.apache.drill.exec.vector.complex.FieldIdUtil;
-import org.apache.drill.exec.vector.complex.MapVector;
 
 import com.google.common.base.Preconditions;
 
@@ -116,7 +113,7 @@ public class HyperVectorWrapper<T extends ValueVector> implements VectorWrapper<
 
   @Override
   @SuppressWarnings("unchecked")
-  public VectorWrapper<T> cloneAndTransfer() {
+  public VectorWrapper<T> cloneAndTransfer(BufferAllocator allocator) {
     return new HyperVectorWrapper<T>(f, vectors, false);
 //    T[] newVectors = (T[]) Array.newInstance(vectors.getClass().getComponentType(), vectors.length);
 //    for(int i =0; i < newVectors.length; i++) {
@@ -132,7 +129,8 @@ public class HyperVectorWrapper<T extends ValueVector> implements VectorWrapper<
   }
 
   public void addVector(ValueVector v) {
-    Preconditions.checkArgument(v.getClass() == this.getVectorClass(), String.format("Cannot add vector type %s to hypervector type %s", v.getClass(), this.getVectorClass()));
+    Preconditions.checkArgument(v.getClass() == this.getVectorClass(), String.format("Cannot add vector type %s to hypervector type %s for field %s",
+      v.getClass(), this.getVectorClass(), v.getField()));
     vectors = (T[]) ArrayUtils.add(vectors, v);// TODO optimize this so not copying every time
   }
 
@@ -145,12 +143,13 @@ public class HyperVectorWrapper<T extends ValueVector> implements VectorWrapper<
    * Both this and destination must be of same type and have same number of vectors.
    * @param destination destination HyperVectorWrapper.
    */
+  @Override
   public void transfer(VectorWrapper<?> destination) {
     Preconditions.checkArgument(destination instanceof HyperVectorWrapper);
     Preconditions.checkArgument(getField().getType().equals(destination.getField().getType()));
-    Preconditions.checkArgument(vectors.length == ((HyperVectorWrapper)destination).vectors.length);
+    Preconditions.checkArgument(vectors.length == ((HyperVectorWrapper<?>)destination).vectors.length);
 
-    ValueVector[] destionationVectors = ((HyperVectorWrapper)destination).vectors;
+    ValueVector[] destionationVectors = ((HyperVectorWrapper<?>)destination).vectors;
     for (int i = 0; i < vectors.length; ++i) {
       vectors[i].makeTransferPair(destionationVectors[i]).transfer();
     }

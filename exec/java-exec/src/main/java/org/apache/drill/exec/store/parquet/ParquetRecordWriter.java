@@ -109,7 +109,7 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
 
   public ParquetRecordWriter(FragmentContext context, ParquetWriter writer) throws OutOfMemoryException{
     super();
-    this.oContext = context.newOperatorContext(writer, true);
+    this.oContext = context.newOperatorContext(writer);
     this.codecFactory = CodecFactory.createDirectCodecFactory(writer.getFormatPlugin().getFsConf(),
         new ParquetDirectByteBufferAllocator(oContext.getAllocator()), pageSize);
     this.partitionColumns = writer.getPartitionColumns();
@@ -181,7 +181,7 @@ public class ParquetRecordWriter extends ParquetOutputRecordWriter {
   private void newSchema() throws IOException {
     List<Type> types = Lists.newArrayList();
     for (MaterializedField field : batchSchema) {
-      if (field.getPath().equals(SchemaPath.getSimplePath(WriterPrel.PARTITION_COMPARATOR_FIELD))) {
+      if (field.getPath().equalsIgnoreCase(WriterPrel.PARTITION_COMPARATOR_FIELD)) {
         continue;
       }
       types.add(getType(field));
