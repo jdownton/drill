@@ -44,21 +44,21 @@ public class AccumuloFilterBuilder extends AbstractExprVisitor<AccumuloScanSpec,
     this.le = le;
   }
 
-//  public AccumuloScanSpec parseTree() {
-//    AccumuloScanSpec parsedSpec = le.accept(this, null);
-//    if (parsedSpec != null) {
-//      parsedSpec = mergeScanSpecs("booleanAnd", this.groupScan.getAccumuloScanSpec(), parsedSpec);
-//      /*
-//       * If RowFilter is THE filter attached to the scan specification,
-//       * remove it since its effect is also achieved through startRow and stopRow.
-//       */
+  public AccumuloScanSpec parseTree() {
+    AccumuloScanSpec parsedSpec = le.accept(this, null);
+    if (parsedSpec != null) {
+      parsedSpec = mergeScanSpecs("booleanAnd", this.groupScan.getAccumuloScanSpec(), parsedSpec);
+      /*
+       * If RowFilter is THE filter attached to the scan specification,
+       * remove it since its effect is also achieved through startRow and stopRow.
+       */
 //      if (parsedSpec.filter instanceof RowFilter &&
 //          ((RowFilter)parsedSpec.filter).getComparator() instanceof BinaryComparator) {
 //        parsedSpec.filter = null;
 //      }
-//    }
-//    return parsedSpec;
-//  }
+    }
+    return parsedSpec;
+  }
 
   public boolean isAllExpressionsConverted() {
     return allExpressionsConverted;
@@ -294,7 +294,7 @@ public class AccumuloFilterBuilder extends AbstractExprVisitor<AccumuloScanSpec,
               }
             }
             if (isMaxVal) {
-              stopRow = HConstants.EMPTY_END_ROW;
+              stopRow = DrillAccumuloConstants.EMPTY_END_ROW.getBytes();
             }
           }
         }
@@ -302,7 +302,7 @@ public class AccumuloFilterBuilder extends AbstractExprVisitor<AccumuloScanSpec,
       break;
     }
 
-    if (compareOp != null || startRow != DrillAccumuloConstants.EMPTY_START_ROW || stopRow != DrillAccumuloConstants.EMPTY_END_ROW) {
+    if (compareOp != null || startRow != DrillAccumuloConstants.EMPTY_START_ROW.getBytes() || stopRow != DrillAccumuloConstants.EMPTY_END_ROW.getBytes()) {
       Filter filter = null;
       if (isRowKey) {
         if (compareOp != null) {
@@ -329,8 +329,8 @@ private AccumuloScanSpec createRowKeyPrefixScanSpec(FunctionCall call,
     byte[] stopRow  = processor.getRowKeyPrefixStopRow();
     Filter filter   = processor.getRowKeyPrefixFilter();
 
-    if (startRow != DrillAccumuloConstants.EMPTY_START_ROW ||
-      stopRow != DrillAccumuloConstants.EMPTY_END_ROW ||
+    if (startRow != DrillAccumuloConstants.EMPTY_START_ROW.getBytes() ||
+      stopRow != DrillAccumuloConstants.EMPTY_END_ROW.getBytes() ||
       filter != null) {
       return new AccumuloScanSpec(groupScan.getTableName(), startRow, stopRow, filter);
     }

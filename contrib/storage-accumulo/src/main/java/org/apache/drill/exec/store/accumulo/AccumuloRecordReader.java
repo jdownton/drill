@@ -47,7 +47,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public class AccumuloRecordReader extends AbstractRecordReader implements org.apache.drill.exec.store.accumulo.DrillAccumuloConstants {
+public class AccumuloRecordReader extends AbstractRecordReader implements DrillAccumuloConstants {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AccumuloRecordReader.class);
 
   private static final int TARGET_RECORD_COUNT = 4000;
@@ -57,7 +57,7 @@ public class AccumuloRecordReader extends AbstractRecordReader implements org.ap
   private Map<String, MapVector> familyVectorMap;
   private VarBinaryVector rowKeyVector;
 
-  private DrillAccumuloTable hTable;
+  private DrillAccumuloTable accTable;
   private Scanner resultScanner;
 
   private Scanner accScanner;
@@ -70,7 +70,7 @@ public class AccumuloRecordReader extends AbstractRecordReader implements org.ap
 
   public AccumuloRecordReader(Configuration conf, AccumuloSubScan.AccumuloSubScanSpec subScanSpec,
                               List<SchemaPath> projectedColumns, FragmentContext context)
-          throws OutOfMemoryException, TableNotFoundException {
+          throws TableNotFoundException {
 
     accumuloConf = conf;
     accScanner = conn.createScanner(AgileConf.AGILE_TABLE_RAW_DATA, new Authorizations());
@@ -97,9 +97,9 @@ public class AccumuloRecordReader extends AbstractRecordReader implements org.ap
         PathSegment child = root.getChild();
         if (child != null && child.isNamed()) {
           byte[] qualifier = child.getNameSegment().getPath().getBytes();
-          accumuloScan.addColumn(family, qualifier);
+          accScanner.addColumn(family, qualifier);
         } else {
-          accumuloScan.addFamily(family);
+          accScanner.addFamily(family);
         }
       }
       /* if only the row key was requested, add a FirstKeyOnlyFilter to the scan
@@ -108,8 +108,8 @@ public class AccumuloRecordReader extends AbstractRecordReader implements org.ap
        * FilterList.
        */
       if (rowKeyOnly) {
-        accumuloScan.setFilter(
-                HBaseUtils.andFilterAtIndex(accumuloScan.getFilter(), HBaseUtils.LAST_FILTER, new FirstKeyOnlyFilter()));
+        accScanner.setFilter(
+                HBaseUtils.andFilterAtIndex(accScanner.getFilter(), HBaseUtils.LAST_FILTER, new FirstKeyOnlyFilter()));
       }
     } else {
       rowKeyOnly = false;
@@ -139,8 +139,8 @@ public class AccumuloRecordReader extends AbstractRecordReader implements org.ap
       logger.debug("Opening scanner for HBase table '{}', Zookeeper quorum '{}', port '{}', znode '{}'.",
               hbaseTableName, accumuloConf.get(HConstants.ZOOKEEPER_QUORUM),
               accumuloConf.get(HBASE_ZOOKEEPER_PORT), accumuloConf.get(HConstants.ZOOKEEPER_ZNODE_PARENT));
-      hTable = new HTable(accumuloConf, hbaseTableName);
-      resultScanner = hTable.getScanner(accumuloScan);
+      accTable = new HTable(accumuloConf, hbaseTableName);
+      resultScanner = accTable.getScanner(accumuloScan);
     } catch (SchemaChangeException | IOException e) {
       throw new ExecutionSetupException(e);
     }
@@ -245,11 +245,11 @@ public class AccumuloRecordReader extends AbstractRecordReader implements org.ap
       if (resultScanner != null) {
         resultScanner.close();
       }
-      if (hTable != null) {
-        hTable.close();
+      if (accTable != null) {
+        accTable.close();
       }
     } catch (IOException e) {
-      logger.warn("Failure while closing HBase table: " + hbaseTableName, e);
+      logger.warn("Failure while closing Accumulo table: " + hbaseTableName, e);
     }
   }
 

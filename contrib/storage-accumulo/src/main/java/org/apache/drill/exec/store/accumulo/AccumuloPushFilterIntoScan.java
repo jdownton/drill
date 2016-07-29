@@ -41,7 +41,7 @@ public abstract class AccumuloPushFilterIntoScan extends StoragePluginOptimizerR
     super(operand, description);
   }
 
-  public static final StoragePluginOptimizerRule FILTER_ON_SCAN = new AccumuloPushFilterIntoScan(RelOptHelper.some(FilterPrel.class, RelOptHelper.any(ScanPrel.class)), "HBasePushFilterIntoScan:Filter_On_Scan") {
+  public static final StoragePluginOptimizerRule FILTER_ON_SCAN = new AccumuloPushFilterIntoScan(RelOptHelper.some(FilterPrel.class, RelOptHelper.any(ScanPrel.class)), "AccumuloPushFilterIntoScan:Filter_On_Scan") {
 
     @Override
     public void onMatch(RelOptRuleCall call) {
@@ -113,7 +113,7 @@ public abstract class AccumuloPushFilterIntoScan extends StoragePluginOptimizerR
   protected void doPushFilterToScan(final RelOptRuleCall call, final FilterPrel filter, final ProjectPrel project, final ScanPrel scan, final AccumuloGroupScan groupScan, final RexNode condition) {
 
     final LogicalExpression conditionExp = DrillOptiq.toDrill(new DrillParseContext(PrelUtil.getPlannerSettings(call.getPlanner())), scan, condition);
-    final AccumuloFilterBuilder hbaseFilterBuilder = new AccumuloFilterBuilder(groupScan, conditionExp);
+    final AccumuloFilterBuilder accumuloFilterBuilder = new AccumuloFilterBuilder(groupScan, conditionExp);
     final AccumuloScanSpec newScanSpec = accumuloFilterBuilder.parseTree();
     if (newScanSpec == null) {
       return; //no filter pushdown ==> No transformation.
@@ -128,7 +128,7 @@ public abstract class AccumuloPushFilterIntoScan extends StoragePluginOptimizerR
     // Depending on whether is a project in the middle, assign either scan or copy of project to childRel.
     final RelNode childRel = project == null ? newScanPrel : project.copy(project.getTraitSet(), ImmutableList.of((RelNode)newScanPrel));;
 
-    if (hbaseFilterBuilder.isAllExpressionsConverted()) {
+    if (accumuloFilterBuilder.isAllExpressionsConverted()) {
         /*
          * Since we could convert the entire filter condition expression into an HBase filter,
          * we can eliminate the filter operator altogether.
